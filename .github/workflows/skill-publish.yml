@@ -6,12 +6,21 @@ on:
     paths:
       - 'skills/**'
   workflow_dispatch:
+    inputs:
+      skill:
+        description: 'Skill slug to publish (leave empty to auto-detect changed skills)'
+        required: false
+      version:
+        description: 'Version override (leave empty to read from skill config)'
+        required: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -24,20 +33,59 @@ jobs:
       - name: Login to ClawHub
         run: clawhub login --token ${{ secrets.CLAWHUB_TOKEN }}
 
-      - name: Publish china-hotel-price-compare
+      - name: Detect changed skills
+        id: detect
         run: |
-          clawhub skill publish ./skills/china-hotel-price-compare \
-            --owner travel-skills \
-            --slug china-hotel-price-compare \
-            --name "酒店比价" \
-            --version 1.2.0 \
-            --changelog "Chinese display name for better search discoverability"
+          if [ -n "${{ github.event.inputs.skill }}" ]; then
+            echo "skills=${{ github.event.inputs.skill }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          # Auto-detect: compare with previous commit
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'skills/*/' | cut -d'/' -f2 | sort -u | tr '\n' ',')
+          echo "skills=${CHANGED%,}" >> $GITHUB_OUTPUT
+          echo "Detected changed skills: ${CHANGED%,}"
 
-      - name: Publish china-flight-price-compare
+      - name: Publish skill
         run: |
-          clawhub skill publish ./skills/china-flight-price-compare \
-            --owner travel-skills \
-            --slug china-flight-price-compare \
-            --name "机票比价" \
-            --version 1.2.0 \
-            --changelog "Chinese display name for better search discoverability"
+          SKILLS="${{ steps.detect.outputs.skills }}"
+          if [ -z "$SKILLS" ]; then
+            echo "No skills to publish"
+            exit 0
+          fi
+
+          # Skill registry: slug -> display name
+          declare -A SLUGS=(
+            ["china-hotel-price-compare"]="酒店比价"
+            ["china-flight-price-compare"]="机票比价"
+            ["global-hotel-search-recommend"]="全球酒店搜索与推荐"
+          )
+
+          IFS=',' read -ra SKILL_LIST <<< "$SKILLS"
+          for skill in "${SKILL_LIST[@]}"; do
+            slug="$skill"
+            name="${SLUGS[$skill]:-$skill}"
+            skill_dir="./skills/$skill"
+
+            if [ ! -d "$skill_dir" ]; then
+              echo "⚠️ Skill dir not found: $skill_dir, skipping"
+              continue
+            fi
+
+            # Read version from version file, or use input, or default
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              version="${{ github.event.inputs.version }}"
+            elif [ -f "$skill_dir/version" ]; then
+              version=$(cat "$skill_dir/version" | tr -d '[:space:]')
+            else
+              echo "⚠️ No version file for $skill, skipping"
+              continue
+            fi
+
+            echo "📦 Publishing $slug @ $version ($name)"
+            clawhub skill publish "$skill_dir" \
+              --owner travel-skills \
+              --slug "$slug" \
+              --name "$name" \
+              --version "$version" \
+              || echo "⚠️ Publish failed for $slug (may already exist at this version)"
+          done
