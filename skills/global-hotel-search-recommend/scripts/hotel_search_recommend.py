@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-全球酒店搜索与推荐 - 腾讯云SCF代理版
+全球酒店搜索与推荐 v1.4.0 - 腾讯云SCF代理版
 1次调用完成：场景识别→参数补全→搜索→详情→退改解读→推荐理由
 按价格分3档推荐（性价比/品质/豪华各4家），极省Token
 密钥存储在SCF环境变量中，脚本不含任何API密钥
@@ -249,6 +249,15 @@ def infer_star_rating(query, scenes, place):
         for g, r in grade_map.items():
             if g in query:
                 return r
+        # 口语化星级关键词
+        if "五星" in query or "5星" in query:
+            return [4.5, 5.0]
+        if "四星" in query or "4星" in query:
+            return [3.5, 4.5]
+        if "三星" in query or "3星" in query:
+            return [2.5, 3.5]
+        if any(w in query for w in ["便宜", "经济", "省钱"]):
+            return [0.0, 2.5]
     primary = scenes[0] if scenes else "通用"
     config = SCENE_CONFIG.get(primary, {})
     if "star" in config:
@@ -347,24 +356,6 @@ def build_search_args(destination, check_in, stay_nights, scenes, query="",
 def _do_search(search_args):
     result = call_proxy("hotel_search", search_args, 25)
     if isinstance(result, dict) and "error" in result:
-        # 降级：用旧hotel格式（兼容代理未更新的情况）
-        ci_param = search_args.get("checkInParam", {})
-        ci = ci_param.get("checkInDate", "")
-        nights = ci_param.get("stayNights", 1)
-        try:
-            from datetime import datetime, timedelta
-            co = (datetime.fromisoformat(ci) + timedelta(days=nights)).strftime("%Y-%m-%d")
-        except Exception:
-            co = ""
-        fallback_params = {
-            "city": search_args.get("place", ""),
-            "check_in": ci,
-            "check_out": co,
-            "keyword": search_args.get("originQuery", ""),
-        }
-        result2 = call_proxy("hotel", fallback_params, 25)
-        if isinstance(result2, dict) and "error" not in result2:
-            return _extract_hotels(result2)
         return []
     return _extract_hotels(result)
 
@@ -679,6 +670,15 @@ def format_output_tiered(hotels, details_map, scenes, destination, check_in, che
     if filters_desc:
         header += f" · 筛选：{filters_desc}"
     lines.append(header)
+
+    # 人数信息行
+    adult = occupancy.get("adultCount", 2)
+    child = occupancy.get("childCount", 0)
+    rooms = occupancy.get("roomCount", 1)
+    people_parts = [f"{adult}成人"]
+    if child and child > 0:
+        people_parts.append(f"{child}儿童")
+    lines.append(f"👥 {''.join(people_parts)} · {rooms}间")
     lines.append("")
 
     # 按档位分组
@@ -729,14 +729,6 @@ def format_output_tiered(hotels, details_map, scenes, destination, check_in, che
                     cancel_s = interpret_cancellation(policies, check_in)
 
         url = hotel.get("detailUrl") or hotel.get("bookingUrl", "")
-        if url and "?" in url:
-            try:
-                base = url.split("?")[0]
-                params = url.split("?")[1]
-                param_pairs = [p for p in params.split("&") if p.startswith("id=") or p.startswith("utm_source=")]
-                url = base + "?" + "&".join(param_pairs) if param_pairs else base
-            except Exception:
-                pass
 
         lines.append(f"{i}. {name} {star_s} {price_s}".rstrip())
 
@@ -777,7 +769,13 @@ def format_output_tiered(hotels, details_map, scenes, destination, check_in, che
 
     lines.append("数据来源：RollingGo | 价格实时变动，以实际下单为准")
     if fallback_level > 0:
-        lines.append(f"⚠️ 已降级搜索（级别{fallback_level}），部分筛选条件已放宽")
+        fallback_desc = {
+            1: "已放宽必选标签",
+            2: "已放宽距离和标签限制",
+            3: "已放宽所有筛选，展示城市热门酒店",
+        }
+        desc = fallback_desc.get(fallback_level, f"级别{fallback_level}")
+        lines.append(f"⚠️ 降级搜索：{desc}")
 
     return "\n".join(lines)
 
@@ -844,6 +842,13 @@ def hotel_search_and_recommend(destination, scene="通用", check_in=None, check
                 effective_star = infer_star_rating(query or "", scenes, destination)
     else:
         effective_star = infer_star_rating(query or "", scenes, destination)
+
+    # 商务场景：一线城市星级下限3.5，其他城市3.0
+    if not effective_star and "商务" in scenes:
+        if destination in TIER1_CITIES:
+            effective_star = [3.5, 5.0]
+        else:
+            effective_star = [3.0, 5.0]
 
     effective_max_price = max_price or infer_max_price(query or "", scenes, destination)
 

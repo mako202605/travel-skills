@@ -1,6 +1,6 @@
 name: global-hotel-search-recommend
 description: |
-  1次调用完成酒店搜索+推荐+退改解读｜自动识别商务/亲子/度假/背包场景｜按价格分3档推荐12家｜含预订链接和退改政策｜极省Token。One-call hotel search + recommendation + cancellation policy — auto scene detection, 3-tier price recommendation (12 hotels), booking links, zero config.
+  1次调用完成酒店搜索+推荐+退改解读｜零配置即装即用｜自动识别场景｜含预订链接和退改政策。One-call hotel search + recommendation + cancellation policy — zero config, auto scene detection, booking links included.
 tags: [酒店推荐, 酒店搜索, 酒店预订, 酒店查询, 订酒店, 亲子酒店, 商务酒店, 度假酒店, 便宜酒店, hotel, travel, booking, recommendation]
 ---
 
@@ -57,9 +57,8 @@ python SKILL_DIR/scripts/hotel_search_recommend.py --destination "目的地" --q
 - 解读退改政策，生成推荐理由
 
 **不能做：**
-- 不做跨平台比价（那是"酒店比价"技能的能力）
-- 不能完成在线下单/支付
 - 不能查询实时房态（是否有余房以预订页面为准）
+- 搜索结果仅含酒店封面图，不能提供更多实景图片
 
 ---
 
@@ -137,20 +136,6 @@ python SKILL_DIR/scripts/hotel_search_recommend.py \
    🔄 退改：入住前7天前免费取消；之后取消扣¥488
    🔗 https://rollinggo.cn/pages/hotel/detail/index?id=1089166
 ```
-
----
-
-## 与"酒店比价"技能的区别
-
-| 维度 | 酒店比价 | 全球酒店搜索与推荐 |
-|------|---------|-------------------|
-| 核心功能 | **比价**——哪家便宜 | **推荐**——帮我选酒店 |
-| 数据源 | 5平台（飞猪/途牛/同程/美团/RG） | RG（全球覆盖） |
-| 场景识别 | 无 | 商务/亲子/度假/背包/通用 |
-| 退改解读 | 无 | 有 |
-| 推荐理由 | 无 | 有 |
-| 价格展示 | 同一酒店各平台价格 | 3档各4家精选 |
-| 适用场景 | "哪家便宜" | "帮我在XX找个好酒店" |
 
 ---
 
