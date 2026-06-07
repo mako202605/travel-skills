@@ -9,8 +9,31 @@ on:
 
 jobs:
   publish:
-    uses: openclaw/clawhub/.github/workflows/skill-publish.yml@main
-    with:
-      owner: travel-skills
-    secrets:
-      clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ClawHub CLI
+        run: npm install -g clawhub
+
+      - name: Login to ClawHub
+        run: clawhub login --token ${{ secrets.CLAWHUB_TOKEN }}
+
+      - name: Publish china-hotel-price-compare
+        run: |
+          clawhub skill publish ./skills/china-hotel-price-compare \
+            --owner travel-skills \
+            --version 1.0.0 \
+            --changelog "Initial release"
+
+      - name: Publish china-flight-price-compare
+        run: |
+          clawhub skill publish ./skills/china-flight-price-compare \
+            --owner travel-skills \
+            --version 1.0.0 \
+            --changelog "Initial release"
