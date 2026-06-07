@@ -1,5 +1,5 @@
 ---
-name: china-hotel-price-compare
+name: 酒店比价
 description: |
   真实多平台并发比价｜飞猪·途牛·同程·美团·RG同时查约20秒出结果｜每条价格标注来源平台｜零配置即装即用。Real multi-platform hotel price comparison — 5 OTA sources concurrent search (~20s), every price tagged with source, zero config.
 tags: [酒店比价, 酒店预订, 酒店搜索, 酒店查询, 酒店推荐, 订酒店, 酒店对比, 飞猪酒店, 同程酒店, 便宜酒店, hotel, travel, booking]

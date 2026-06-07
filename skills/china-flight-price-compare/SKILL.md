@@ -1,5 +1,5 @@
 ---
-name: china-flight-price-compare
+name: 机票比价
 description: |
   真实多平台并发机票比价｜飞猪·途牛·同程·美团·RG同时查约20秒出结果｜仅直飞｜每条价格标注来源｜零配置即装即用。Real multi-platform flight price comparison — direct flights only, 5 OTA sources concurrent search (~20s), every price tagged with source, zero config.
 tags: [机票比价, 机票预订, 机票搜索, 机票查询, 订机票, 机票对比, 特价机票, 途牛机票, 航班查询, 打折机票, flight, airfare, travel]
