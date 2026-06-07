@@ -9,13 +9,8 @@ on:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Publish skills
-        uses: openclaw/clawhub/.github/workflows/skill-publish.yml@main
-        with:
-          owner: travel-skills
-        secrets:
-          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+    uses: openclaw/clawhub/.github/workflows/skill-publish.yml@main
+    with:
+      owner: travel-skills
+    secrets:
+      clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}
