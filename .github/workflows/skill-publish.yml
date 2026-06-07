@@ -28,12 +28,12 @@ jobs:
         run: |
           clawhub skill publish ./skills/china-hotel-price-compare \
             --owner travel-skills \
-            --version 1.0.0 \
-            --changelog "Initial release"
+            --version 1.1.0 \
+            --changelog "Rename to Chinese display name for better search discoverability"
 
       - name: Publish china-flight-price-compare
         run: |
           clawhub skill publish ./skills/china-flight-price-compare \
             --owner travel-skills \
-            --version 1.0.0 \
-            --changelog "Initial release"
+            --version 1.1.0 \
+            --changelog "Rename to Chinese display name for better search discoverability"
