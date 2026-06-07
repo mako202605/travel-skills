@@ -1,0 +1,21 @@
+name: Publish Skills to ClawHub
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish skills
+        uses: openclaw/clawhub/.github/workflows/skill-publish.yml@main
+        with:
+          owner: travel-skills
+        secrets:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
