@@ -18,8 +18,8 @@ def _call_proxy(route, arguments):
     """调用同程SCF代理"""
     url = PROXY_URL.rstrip('/')
     body = json.dumps({
-        'route': route,
-        'arguments': arguments,
+        'type': route,
+        'params': arguments,
     }).encode('utf-8')
 
     req = urllib.request.Request(url, data=body, method='POST')
