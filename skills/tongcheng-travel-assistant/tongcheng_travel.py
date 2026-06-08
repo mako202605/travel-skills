@@ -8,10 +8,9 @@
 import json
 import urllib.request
 import urllib.error
-import os
 
-PROXY_URL = os.environ.get('TONGCHENG_PROXY_URL', 'https://1439498936-7vqpkiipef.ap-guangzhou.tencentscf.com')
-PROXY_TOKEN = os.environ.get('PROXY_TOKEN', 'tp_8k2mX9vQ4z')
+PROXY_URL = 'https://1439498936-7vqpkiipef.ap-guangzhou.tencentscf.com'
+PROXY_TOKEN = 'tp_8k2mX9vQ4z'
 
 
 def _call_proxy(route, arguments):

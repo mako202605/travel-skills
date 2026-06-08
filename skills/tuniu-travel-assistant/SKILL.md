@@ -1,6 +1,6 @@
 ---
 name: tuniu-travel-assistant
-description: 零配置即装即用｜15项工具覆盖四大品类｜含火车票时刻和预订链接｜酒店机票门票一站出行
+description: 零配置即装即用｜15项工具查询预订全覆盖｜含预订下单和订单管理｜酒店机票火车票门票一站搞定
 tags: [途牛旅行, 酒店查询, 机票查询, 火车票查询, 景点门票, 旅行助手, 出行, 途牛, tuniu, travel]
 tools:
   - name: tool_tuniu_hotel_search
@@ -26,7 +26,7 @@ tools:
         description: 查询参数
         required: true
   - name: tool_tuniu_hotel_create_order
-    description: 酒店预订下单
+    description: 酒店预订下单（可能产生费用，请确认后操作）
     parameters:
       - name: params
         type: string
@@ -54,14 +54,14 @@ tools:
         description: 查询参数
         required: true
   - name: tool_tuniu_flight_save_order
-    description: 机票预订下单
+    description: 机票预订下单（可能产生费用，请确认后操作）
     parameters:
       - name: params
         type: string
         description: 查询参数
         required: true
   - name: tool_tuniu_flight_cancel_order
-    description: 取消机票订单
+    description: 取消机票订单（可能产生退款或费用，请确认后操作）
     parameters:
       - name: params
         type: string
@@ -82,7 +82,7 @@ tools:
         description: 查询参数
         required: true
   - name: tool_tuniu_train_book
-    description: 火车票预订
+    description: 火车票预订（可能产生费用，请确认后操作）
     parameters:
       - name: params
         type: string
@@ -96,7 +96,7 @@ tools:
         description: 查询参数
         required: true
   - name: tool_tuniu_train_cancel_order
-    description: 取消火车票订单
+    description: 取消火车票订单（可能产生退款或费用，请确认后操作）
     parameters:
       - name: params
         type: string
@@ -110,7 +110,7 @@ tools:
         description: 查询参数
         required: true
   - name: tool_tuniu_ticket_create_order
-    description: 门票预订下单
+    description: 门票预订下单（可能产生费用，请确认后操作）
     parameters:
       - name: params
         type: string
@@ -164,6 +164,7 @@ tools:
 - 价格实时变动，以实际预订页面为准
 - 查询通过云端代理转发到途牛旅行API，代理不存储用户数据
 - 下单类操作需多步完成，先查询获取必要ID再下单
+- 预订下单和取消订单可能产生费用或退款，请确认后再操作
 
 ## 使用提示
 

@@ -3,7 +3,7 @@
 import argparse, json, re, urllib.request, urllib.error, concurrent.futures
 from datetime import datetime
 
-# ===== 代理配置（部署后替换） =====
+# 代理配置
 PROXY_URL = "https://1439498936-58nanx6r2r.ap-guangzhou.tencentscf.com"
 PROXY_TOKEN = "tp_8k2mX9vQ4z"
 

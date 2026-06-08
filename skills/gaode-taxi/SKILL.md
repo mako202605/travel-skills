@@ -1,6 +1,6 @@
 ---
 name: gaode-taxi
-description: 零配置即装即用｜一键叫车预估费用｜含多车型实时价格对比｜支持即时叫车和预约
+description: 零配置即装即用｜23项地图能力一键叫车｜含路线规划和周边搜索｜驾车公交步行骑行打车全覆盖
 tags: [高德打车, 打车, 叫车, 出租车, 网约车, 路线规划, 导航, 周边搜索, gaode, taxi, ride]
 tools:
   - name: tool_schema_take_taxi
