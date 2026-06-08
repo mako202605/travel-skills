@@ -25,9 +25,9 @@ _CITIES = [
 
 
 # ============ 代理调用 ============
-def _call_fliggy(tool, arguments):
+def _call_fliggy(rtype, params):
     """调用飞猪SCF代理"""
-    body = json.dumps({"tool": tool, "arguments": arguments}, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    body = json.dumps({"type": rtype, "params": params}, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     req = urllib.request.Request(
         FLIGGY_PROXY, data=body,
         headers={"Content-Type": "application/json", "X-Proxy-Token": PROXY_TOKEN},
