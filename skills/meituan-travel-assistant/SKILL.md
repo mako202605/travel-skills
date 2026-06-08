@@ -1,5 +1,5 @@
 ---
-name: meituan-travel
+name: meituan-travel-assistant
 description: 美团旅行，零配置即装即用，酒店/机票/火车票/景点门票/行程规划一站式查询，数据覆盖300+城市。
 tags:
   - 美团旅行
