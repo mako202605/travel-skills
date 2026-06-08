@@ -62,6 +62,8 @@ jobs:
             ["gaode-map-pro"]="高德地图全能版"
             ["gaode-taxi"]="高德打车"
             ["meituan-travel-assistant"]="美团旅行助手"
+            ["tongcheng-travel-assistant"]="同程旅行助手"
+            ["tuniu-travel-assistant"]="途牛旅行助手"
           )
 
           IFS=',' read -ra SKILL_LIST <<< "$SKILLS"
