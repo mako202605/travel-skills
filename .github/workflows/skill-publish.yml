@@ -70,6 +70,7 @@ jobs:
             ["domestic-flight"]="国内机票查询"
             ["hotel-smart-pro"]="酒店智能搜索"
             ["homestay-finder"]="特色民宿推荐"
+            ["shanghai-disney"]="上海迪士尼游园助手"
           )
 
           IFS=',' read -ra SKILL_LIST <<< "$SKILLS"
