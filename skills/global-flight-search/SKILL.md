@@ -1,4 +1,4 @@
-name: global-flight-search-recommend
+name: global-flight-search
 description: |
   1次调用完成航班搜索+性价比标签+中转等待｜零配置即装即用｜中文城市名直输｜航司显示中文名。支持经济舱/商务舱/头等舱，单程/往返，直飞与中转分开展示。可查询座位余量和行李额度。
 tags: [航班查询, 航班搜索, 机票查询, 机票搜索, 订机票, 国际航班, 国内航班, 航班比价, 便宜机票, flight, travel, booking]

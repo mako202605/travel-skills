@@ -58,7 +58,7 @@ jobs:
             ["china-hotel-price-compare"]="酒店比价"
             ["china-flight-price-compare"]="机票比价"
             ["global-hotel-search-recommend"]="全球酒店搜索与推荐"
-            ["global-flight-search-recommend"]="全球航班查询与预订"
+            ["global-flight-search"]="全球航班查询与预订"
             ["gaode-map-pro"]="高德地图全能版"
             ["gaode-taxi"]="高德打车"
             ["meituan-travel-assistant"]="美团旅行助手"
