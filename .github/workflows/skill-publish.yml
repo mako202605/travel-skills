@@ -64,7 +64,12 @@ jobs:
             ["meituan-travel-assistant"]="美团旅行助手"
             ["tongcheng-travel-assistant"]="同程旅行助手"
             ["tuniu-travel-assistant"]="途牛旅行助手"
-            ["fliggy-travel"]="飞猪旅行助手"
+            ["fliggy-travel"]="飞猪旅行"
+            ["smart-travel"]="智能旅行规划"
+            ["smart-poi"]="智能景点推荐"
+            ["domestic-flight"]="国内机票查询"
+            ["hotel-smart-pro"]="酒店智能搜索"
+            ["homestay-finder"]="特色民宿推荐"
           )
 
           IFS=',' read -ra SKILL_LIST <<< "$SKILLS"
