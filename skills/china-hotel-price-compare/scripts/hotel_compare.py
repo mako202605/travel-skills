@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-酒店比价 - 腾讯云SCF代理版
-密钥存储在SCF环境变量中，脚本不含任何API密钥
-"""
+"""酒店比价 - 多平台酒店实时价格对比"""
 import argparse, json, re, urllib.request, urllib.error, concurrent.futures
 from datetime import datetime, timedelta
 

@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-全球航班查询与预订 v1.1.0 - 腾讯云SCF代理版
-1次调用完成：中文城市→代码映射→搜索→直飞/中转分组→性价比标签→中转等待
-新增：座位余量查询、行李额度查询
-密钥存储在SCF环境变量中，脚本不含任何API密钥
-"""
+"""全球航班查询与预订 - 航班搜索+性价比标签+座位余量+行李额度"""
 import argparse, json, re, sys, urllib.request, urllib.error
 from datetime import datetime
 

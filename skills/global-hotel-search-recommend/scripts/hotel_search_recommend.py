@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-全球酒店搜索与推荐 v1.5.0 - 腾讯云SCF代理版
-1次调用完成：场景识别→参数补全→搜索→详情→退改解读→推荐理由
-按价格分3档推荐（性价比/品质/豪华各4家），极省Token
-密钥存储在SCF环境变量中，脚本不含任何API密钥
-"""
+"""全球酒店搜索与推荐 - 场景识别+搜索+推荐+退改解读"""
 import argparse, json, re, urllib.request, urllib.error, concurrent.futures
 from datetime import datetime, timedelta
 
