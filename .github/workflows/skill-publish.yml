@@ -60,6 +60,7 @@ jobs:
             ["global-hotel-search-recommend"]="全球酒店搜索与推荐"
             ["global-flight-search-recommend"]="全球航班查询与预订"
             ["gaode-map-pro"]="高德地图全能版"
+            ["gaode-taxi"]="高德打车"
           )
 
           IFS=',' read -ra SKILL_LIST <<< "$SKILLS"
