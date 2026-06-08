@@ -264,7 +264,7 @@ def _parse_rg(proxy_resp, from_city, to_city, date):
     err = proxy_resp.get("error")
     if err: return []
     try:
-        data = json.loads(raw)
+        data = _parse_mcp(raw, proxy_resp.get("content_type",""))
         if isinstance(data, dict) and "error" in data: return []
     except: return []
     fl = data.get("flightInformationList",[]) if isinstance(data, dict) else []
