@@ -1,6 +1,6 @@
 ---
 name: hotel-smart-pro
-description: 零配置即装即用｜5项工具酒店搜索万豪品牌详情套餐周边餐饮｜飞猪+高德数据直连
+description: 零配置即装即用，提供5项酒店搜索工具，支持万豪品牌查询、酒店详情、套餐推荐、周边餐饮搜索，基于飞猪与高德数据直连
 tags: [酒店搜索, 万豪酒店, 酒店推荐, 周边餐饮, 飞猪旅行, 高德地图, hotel, marriott]
 tools:
   - name: search_hotels
