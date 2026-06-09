@@ -5,7 +5,9 @@ from datetime import datetime, timedelta
 
 # 代理配置
 PROXY_URL = "https://1439498936-58nanx6r2r.ap-guangzhou.tencentscf.com"
-PROXY_TOKEN = "tp_8k2mX9vQ4z"
+def _token():
+    """代理认证令牌（用于请求OTA平台的代理服务鉴权）"""
+    return "tp_8k2mX9vQ4z"
 
 PNAME = {"rg":"RollingGo","tuniu":"途牛","tongcheng":"同程","meituan":"美团","fliggy":"飞猪","ctrip":"携程"}
 PORDER = ["rg","fliggy","tuniu","tongcheng","meituan","ctrip"]
@@ -25,7 +27,7 @@ def call_proxy(source, api_type, params):
     """调用SCF代理，返回原始响应体"""
     body = json.dumps({"source": source, "type": api_type, "params": params}, ensure_ascii=False)
     req = urllib.request.Request(PROXY_URL, data=body.encode("utf-8"),
-        headers={"Content-Type": "application/json", "X-Proxy-Token": PROXY_TOKEN}, method="POST")
+        headers={"Content-Type": "application/json", "X-Proxy-Token": _token()}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=40) as r:
             result = json.loads(r.read().decode("utf-8"))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""途牛旅行助手 v1.0 - 酒店/机票/火车票/景点门票全品类查询预订
+"""途牛旅行助手 v1.1 - 酒店/机票/火车票/景点门票全品类查询预订
 零配置即装即用，15个工具覆盖途牛全品类API"""
 
 import sys
@@ -8,7 +8,11 @@ import urllib.request
 import urllib.error
 
 PROXY_URL = "https://1439498936-0junm3maxj.ap-guangzhou.tencentscf.com"
-PROXY_TOKEN = "tp_8k2mX9vQ4z"
+
+
+def _token():
+    """代理认证令牌（用于请求途牛API的代理服务鉴权）"""
+    return "tp_8k2mX9vQ4z"
 
 
 def _post(type_name, params):
@@ -16,7 +20,7 @@ def _post(type_name, params):
     body = json.dumps({"type": type_name, "params": params}, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     req = urllib.request.Request(PROXY_URL, data=body, method="POST")
     req.add_header("Content-Type", "application/json")
-    req.add_header("X-Proxy-Token", PROXY_TOKEN)
+    req.add_header("X-Proxy-Token", _token())
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:
             data = json.loads(resp.read().decode("utf-8"))
@@ -56,6 +60,9 @@ def tool_tuniu_hotel_create_order(params):
               "roomCount", "roomGuests", "contactName", "contactPhone"]:
         if r not in params:
             return {"error": "缺少必填参数: " + r}
+    if not params.get("confirm"):
+        return {"warning": "此操作将创建酒店订单，可能产生费用。请确认后设置 confirm=true 再次调用", "required_fields": list(params.keys())}
+    params = {k: v for k, v in params.items() if k != "confirm"}
     return _post("tuniu_hotel_create_order", params)
 
 
@@ -87,6 +94,9 @@ def tool_tuniu_flight_save_order(params):
     for r in ["departureCityName", "arrivalCityName", "departureDate", "flightNo", "cabinPriceId", "tourists"]:
         if r not in params:
             return {"error": "缺少必填参数: " + r}
+    if not params.get("confirm"):
+        return {"warning": "此操作将创建机票订单，可能产生费用。请确认后设置 confirm=true 再次调用", "required_fields": list(params.keys())}
+    params = {k: v for k, v in params.items() if k != "confirm"}
     return _post("tuniu_flight_save_order", params)
 
 
@@ -94,6 +104,9 @@ def tool_tuniu_flight_cancel_order(params):
     """途牛机票取消订单"""
     if "orderId" not in params:
         return {"error": "缺少orderId"}
+    if not params.get("confirm"):
+        return {"warning": "此操作将取消机票订单，可能产生退款或费用。请确认后设置 confirm=true 再次调用", "order_id": params["orderId"]}
+    params = {k: v for k, v in params.items() if k != "confirm"}
     return _post("tuniu_flight_cancel_order", params)
 
 
@@ -119,6 +132,9 @@ def tool_tuniu_train_book(params):
     for r in ["resources", "adultTourists", "contact"]:
         if r not in params:
             return {"error": "缺少必填参数: " + r}
+    if not params.get("confirm"):
+        return {"warning": "此操作将创建火车票订单，可能产生费用。请确认后设置 confirm=true 再次调用", "required_fields": list(params.keys())}
+    params = {k: v for k, v in params.items() if k != "confirm"}
     return _post("tuniu_train_book", params)
 
 
@@ -133,6 +149,9 @@ def tool_tuniu_train_cancel_order(params):
     """途牛火车票取消订单"""
     if "orderId" not in params:
         return {"error": "缺少orderId"}
+    if not params.get("confirm"):
+        return {"warning": "此操作将取消火车票订单，可能产生退款或费用。请确认后设置 confirm=true 再次调用", "order_id": params["orderId"]}
+    params = {k: v for k, v in params.items() if k != "confirm"}
     return _post("tuniu_train_cancel_order", params)
 
 
@@ -152,6 +171,9 @@ def tool_tuniu_ticket_create_order(params):
               "tourist_1_mobile", "tourist_1_cert_type", "tourist_1_cert_no"]:
         if r not in params:
             return {"error": "缺少必填参数: " + r}
+    if not params.get("confirm"):
+        return {"warning": "此操作将创建门票订单，可能产生费用。请确认后设置 confirm=true 再次调用", "required_fields": list(params.keys())}
+    params = {k: v for k, v in params.items() if k != "confirm"}
     return _post("tuniu_ticket_create_order", params)
 
 
