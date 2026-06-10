@@ -100,7 +100,7 @@ def _parse_tuniu(proxy_resp, city, ci, co, kw):
         try: p = float(re.sub(r"[^\d.]","",str(h.get("lowestPrice") or h.get("price") or "0")))
         except: p = 0
         if p <= 0: continue
-        hotels.append({"name":name,"price":p,"address":h.get("address") or h.get("hotelAddress",""),"latitude":h.get("latitude"),"longitude":h.get("longitude"),"star":h.get("starName") or h.get("star",""),"source":"tuniu","url":h.get("detailUrl") or h.get("url",""),"brand":h.get("brandName") or ""})
+        hotels.append({"name":name,"price":p,"address":h.get("address") or h.get("hotelAddress",""),"latitude":h.get("latitude"),"longitude":h.get("longitude"),"star":h.get("starName") or h.get("star",""),"source":"tuniu","url":h.get("detailUrl") or h.get("url","") or (f"https://hotel.tuniu.com/detail/{h.get("hotelId","")}" if h.get("hotelId") else ""),"brand":h.get("brandName") or ""})
     return hotels
 
 def _parse_tongcheng(proxy_resp, city, ci, co, kw):

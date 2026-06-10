@@ -162,7 +162,7 @@ def _parse_tuniu(proxy_resp, from_city, to_city, date):
                 "dep_port":f.get("departureAirport",""),"arr_port":f.get("arrivalAirport",""),
                 "cabin":f.get("cabinClass","经济舱"),
                 "duration":_fmt_duration(f.get("totalDuration","") or f.get("flyTime","")),
-                "price":price,"source":"tuniu","url":""})
+                "price":price,"source":"tuniu","url":_tuniu_flight_url(from_city, to_city, date)})
     return flights
 
 def _parse_meituan(proxy_resp, from_city, to_city, date):
