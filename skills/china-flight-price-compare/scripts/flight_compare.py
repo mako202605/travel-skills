@@ -25,7 +25,7 @@ AIRLINE_MAP = {
     "SU":"俄航","AA":"美航","UA":"美联航","DL":"达美","QF":"澳航","NZ":"纽航",
 }
 
-# ---- RG IATA城市代码映射 ----
+# ---- RG IATA城市/机场代码映射 ----
 CITY_CODE = {"上海":"SHA","北京":"PEK","广州":"CAN","深圳":"SZX","成都":"CTU",
     "重庆":"CKG","杭州":"HGH","南京":"NKG","武汉":"WUH","西安":"XIY",
     "长沙":"CSX","郑州":"CGO","昆明":"KMG","厦门":"XMN","青岛":"TAO",
@@ -33,6 +33,17 @@ CITY_CODE = {"上海":"SHA","北京":"PEK","广州":"CAN","深圳":"SZX","成都
     "三亚":"SYX","贵阳":"KWE","南宁":"NNG","兰州":"LHW","太原":"TYN",
     "合肥":"HFE","福州":"FOC","南昌":"KHN","石家庄":"SJW","长春":"CGQ",
     "呼和浩特":"HET","乌鲁木齐":"URC","拉萨":"LXA","西宁":"XNN","银川":"INC"}
+
+IATA_PORT = {
+    "SHA":"虹桥","PVG":"浦东","PEK":"首都","PKX":"大兴","CAN":"白云",
+    "SZX":"宝安","CTU":"双流","TFU":"天府","CKG":"江北","HGH":"萧山",
+    "NKG":"禄口","WUH":"天河","XIY":"咸阳","CSX":"黄花","CGO":"新郑",
+    "KMG":"长水","XMN":"高崎","TAO":"胶东","DLC":"周水子","HRB":"太平",
+    "SHE":"桃仙","TSN":"滨海","HAK":"美兰","SYX":"凤凰","KWE":"龙洞堡",
+    "NNG":"吴圩","LHW":"中川","TYN":"武宿","HFE":"新桥","FOC":"长乐",
+    "KHN":"昌北","SJW":"正定","CGQ":"龙嘉","HET":"白塔","URC":"地窝堡",
+    "LXA":"贡嘎","XNN":"曹家堡","INC":"河东",
+}
 
 def _airline_name(fn):
     if not fn: return ""
@@ -220,6 +231,7 @@ def _parse_meituan(proxy_resp, from_city, to_city, date):
     return flights[:20]
 
 def _parse_tongcheng(proxy_resp, from_city, to_city, date):
+    """同程航班解析：优先结构化数据，补DeepTrip文本"""
     raw = proxy_resp.get("raw","")
     err = proxy_resp.get("error")
     if err: return []
@@ -229,34 +241,70 @@ def _parse_tongcheng(proxy_resp, from_city, to_city, date):
         data = result.get("data", {}) or {}
         text = data.get("text", "")
         links = data.get("产品跳转链接", {}) or {}
+        struct_flights = data.get("__tc_struct_flights", [])
     except: return []
-    if not text: return []
+
     flights = []
     seen = set()
-    p = re.compile(r'([A-Z0-9]{2}\d{3,4})\s+([^\s→]+?)(T\d)?\s+(\d{1,2}:\d{2})[→\-]\s*([^\s，]+?)(T\d)?\s+(\d{1,2}:\d{2})[，,].*?(?:经济舱)?(\d+)元')
-    for m in p.finditer(text):
-        fn = m.group(1).upper().replace(" ", "")
-        if fn in seen: continue
-        seen.add(fn)
-        dep_port = (m.group(2) or "").strip()
-        arr_port = (m.group(5) or "").strip()
-        if m.group(3): dep_port += m.group(3)
-        if m.group(6): arr_port += m.group(6)
-        try: price = float(m.group(8))
-        except: continue
-        if price <= 0: continue
-        url = ""
-        fl = links.get(fn, {})
-        if isinstance(fl, dict):
-            url = fl.get("手机链接", "") or fl.get("PC链接", "")
-        flights.append({"flight_no": fn, "airline": _airline_name(fn),
-            "dep_time": m.group(4), "arr_time": m.group(7) or "",
-            "dep_port": dep_port, "arr_port": arr_port,
-            "cabin": "经济舱", "duration": "", "price": price,
-            "source": "tongcheng", "url": url})
+
+    # 优先解析结构化航班数据（来自同程结构化API，3条稳定）
+    if isinstance(struct_flights, list):
+        for f in struct_flights:
+            fn = (f.get("flightNo") or "").upper().replace(" ","")
+            if not fn or fn in seen: continue
+            ftype = str(f.get("tripType",""))
+            if "TRANSFER" in ftype: continue
+            dep = f.get("depTime","")
+            arr = f.get("arrTime","")
+            dep_port = f.get("depAirportShortName","") or f.get("depAirportName","")
+            arr_port = f.get("arrAirportShortName","") or f.get("arrAirportName","")
+            # 加航站楼
+            dt = f.get("depAirportTerminal","")
+            at = f.get("arrAirportTerminal","")
+            if dt: dep_port = dep_port + dt
+            if at: arr_port = arr_port + at
+            cabin = "经济舱"
+            price = f.get("price",0)
+            try: price = float(price)
+            except: price = 0
+            duration = f.get("runTime","")
+            url = f.get("redirectUrl","")
+            if fn and price > 0:
+                seen.add(fn)
+                flights.append({"flight_no":fn,
+                    "airline":f.get("airlineShortName","") or _airline_name(fn),
+                    "dep_time":dep,"arr_time":arr,
+                    "dep_port":dep_port,"arr_port":arr_port,"cabin":cabin,
+                    "duration":duration,"price":price,
+                    "source":"tongcheng","url":url})
+
+    # 再解析DeepTrip文本数据（5-8条，可能不稳定但覆盖更多航班）
+    if text:
+        p = re.compile(r'([A-Z0-9]{2}\d{3,4})\s+([^\s→]+?)(T\d)?\s+(\d{1,2}:\d{2})[→\-]\s*([^\s，]+?)(T\d)?\s+(\d{1,2}:\d{2})[，,].*?(?:经济舱)?(\d+)元')
+        for m in p.finditer(text):
+            fn = m.group(1).upper().replace(" ","")
+            if fn in seen: continue
+            seen.add(fn)
+            dep_port = (m.group(2) or "").strip()
+            arr_port = (m.group(5) or "").strip()
+            if m.group(3): dep_port += m.group(3)
+            if m.group(6): arr_port += m.group(6)
+            try: price = float(m.group(8))
+            except: continue
+            if price <= 0: continue
+            url = ""
+            fl = links.get(fn, {})
+            if isinstance(fl, dict):
+                url = fl.get("手机链接","") or fl.get("PC链接","")
+            flights.append({"flight_no":fn,"airline":_airline_name(fn),
+                "dep_time":m.group(4),"arr_time":m.group(7) or "",
+                "dep_port":dep_port,"arr_port":arr_port,
+                "cabin":"经济舱","duration":"","price":price,
+                "source":"tongcheng","url":url})
     return flights
 
 def _parse_rg(proxy_resp, from_city, to_city, date):
+    """RG航班解析：MCP格式，处理回退日期和IATA机场代码"""
     raw = proxy_resp.get("raw","")
     err = proxy_resp.get("error")
     if err: return []
@@ -264,8 +312,18 @@ def _parse_rg(proxy_resp, from_city, to_city, date):
         data = _parse_mcp(raw, proxy_resp.get("content_type",""))
         if isinstance(data, dict) and "error" in data: return []
     except: return []
+    # 检查回退日期
+    fallback_date = data.get("__rg_fallback_date") if isinstance(data, dict) else None
     fl = data.get("flightInformationList",[]) if isinstance(data, dict) else []
     if not isinstance(fl, list): return []
+    # 目标机场代码过滤
+    target_codes = set()
+    for city_name in [to_city]:
+        code = CITY_CODE.get(city_name, "")
+        if code: target_codes.add(code)
+        # 多机场城市
+        multi = {"北京":{"PEK","PKX"},"上海":{"SHA","PVG"},"成都":{"CTU","TFU"}}
+        if city_name in multi: target_codes.update(multi[city_name])
     flights = []
     for f in fl[:60]:
         segs = f.get("fromSegments",[])
@@ -273,22 +331,31 @@ def _parse_rg(proxy_resp, from_city, to_city, date):
         seg = segs[0]
         fn = seg.get("flightNumber","")
         if not fn: continue
+        # 过滤目标城市
+        arr_code = seg.get("arrAirport","")
+        if target_codes and arr_code not in target_codes: continue
         carrier = f.get("validatingCarrier","")
         dep = seg.get("depTime","")
         arr = seg.get("arrTime","")
-        dep_port = seg.get("depAirport","")
-        arr_port = seg.get("arrAirport","")
+        dep_port = IATA_PORT.get(seg.get("depAirport",""), seg.get("depAirport",""))
+        arr_port = IATA_PORT.get(seg.get("arrAirport",""), seg.get("arrAirport",""))
         duration = seg.get("duration","")
         price = f.get("totalAdultPrice",0)
         try: price = float(price)
         except: price = 0
         url = f.get("bookingUrl","")
+        cabin = "经济舱"
+        # RG返回全价票，标注区分
+        if price > 1500: cabin = "全价经济舱"
         if fn and price > 0:
-            flights.append({"flight_no":fn.upper().replace(" ",""),
+            fdict = {"flight_no":fn.upper().replace(" ",""),
                 "airline":_airline_name(carrier) if carrier else _airline_name(fn),
                 "dep_time":_fmt_time(dep),"arr_time":_fmt_time(arr),
-                "dep_port":dep_port,"arr_port":arr_port,"cabin":"经济舱",
-                "duration":_fmt_duration(duration),"price":price,"source":"rg","url":url})
+                "dep_port":dep_port,"arr_port":arr_port,"cabin":cabin,
+                "duration":_fmt_duration(duration),"price":price,"source":"rg","url":url}
+            if fallback_date:
+                fdict["fallback_date"] = fallback_date
+            flights.append(fdict)
     return flights[:20]
 
 # ---- 航班号匹配 ----
@@ -318,10 +385,10 @@ def _match_flights(all_flights):
     return result
 
 # ---- 格式化输出 ----
-def _format(flights, from_city, to_city, date, failed_srcs=None):
+def _format(flights, from_city, to_city, date, failed_srcs=None, rg_fallback=False):
     flights.sort(key=lambda x: (-x["platform_count"], x["min_price"]))
     multi = [f for f in flights if f["platform_count"] >= 2][:8]
-    single = [f for f in flights if f["platform_count"] == 1][:2]
+    single = [f for f in flights if f["platform_count"] == 1][:5]
     total = len(flights)
     show_count = len(multi) + len(single)
     lines = [f"✈️ **{from_city}→{to_city}** {date} 机票比价",""]
@@ -344,13 +411,15 @@ def _format(flights, from_city, to_city, date, failed_srcs=None):
         parts = []
         for s, ph in sorted_p:
             p = ph["price"]
-            ps = f"¥{int(p)}起" if s == "meituan" and p > 0 else (f"¥{int(p)}" if p > 0 else "—")
+            cabin_note = ""
+            if ph.get("cabin") == "全价经济舱": cabin_note = "（全价）"
+            ps = f"¥{int(p)}起" if s == "meituan" and p > 0 else (f"¥{int(p)}{cabin_note}" if p > 0 else "—")
             parts.append(f"{PNAME[s]} {ps}")
         lines.append("   " + " | ".join(parts))
         if f["min_price"] > 0 and pc >= 2:
-            ms = PNAME.get(sorted_p[0][0], "") if sorted_p else ""
+            ms = PNAME.get(sorted_p[0][0],"") if sorted_p else ""
             pl = f"   💰 最低价 ¥{int(f['min_price'])}（{ms}）"
-            lowest_url = sorted_p[0][1].get("url", "") if sorted_p else ""
+            lowest_url = sorted_p[0][1].get("url","") if sorted_p else ""
             if lowest_url: pl += f" [去预订→]({lowest_url})"
             prices = [(s, ph["price"]) for s, ph in sorted_p if ph["price"] > 0]
             if len(prices) >= 2:
@@ -373,12 +442,15 @@ def _format(flights, from_city, to_city, date, failed_srcs=None):
             at = f["arr_time"] or "--:--"
             s = list(f["platforms"].keys())[0]
             p = f["platforms"][s]["price"]
-            ps = f"¥{int(p)}起" if s == "meituan" else f"¥{int(p)}"
-            url = f["platforms"][s].get("url", "")
+            cabin_note = "（全价）" if f["platforms"][s].get("cabin") == "全价经济舱" else ""
+            ps = f"¥{int(p)}起" if s == "meituan" else f"¥{int(p)}{cabin_note}"
+            url = f["platforms"][s].get("url","")
             link = f" [去预订→]({url})" if url else ""
             lines.append(f"**{idx}. {f['airline']} {f['flight_no']}**  {dt}-{at}  {PNAME[s]} {ps}{link}")
             lines.append("")
-    lines.append("仅展示直飞航班 | 美团为起步价 | 价格实时变动，以实际预订为准")
+    lines.append("仅展示直飞航班 | 美团为起步价 | RG全价票为参考价 | 价格实时变动，以实际预订为准")
+    if rg_fallback:
+        lines.append("⏰ RG当天航班数据暂不可用，已自动查询次日航班供参考")
     if failed_srcs:
         fnames = "、".join(PNAME.get(s, s) for s in failed_srcs if s in PNAME)
         if fnames:
@@ -410,9 +482,9 @@ def main():
     except ValueError:
         print("❌ 日期格式不正确，请使用YYYY-MM-DD格式"); return
 
-    # 通过代理并行查询5个数据源
     all_flights = []
     src_results = {}
+    rg_fallback = False
 
     def fetch_source(source, parse_fn, params):
         try:
@@ -425,7 +497,6 @@ def main():
             return source, [], False
 
     common_params = {"from_city": from_city, "to_city": to_city, "date": date}
-    # RG需要IATA代码
     rg_params = {**common_params, "from_city_code": CITY_CODE.get(from_city, from_city), "to_city_code": CITY_CODE.get(to_city, to_city)}
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
@@ -442,6 +513,12 @@ def main():
                 _, flights, ok = f.result(timeout=40)
                 if flights:
                     all_flights.extend(flights)
+                    # 检测RG回退
+                    if src == "rg":
+                        for fl in flights:
+                            if fl.get("fallback_date"):
+                                rg_fallback = True
+                                break
                 src_results[src] = ok
             except:
                 src_results[src] = False
@@ -452,7 +529,7 @@ def main():
     matched = _match_flights(all_flights)
     if not matched:
         print(f"未找到{from_city}→{to_city} {date}的可比价航班"); return
-    print(_format(matched, from_city, to_city, date, failed_srcs))
+    print(_format(matched, from_city, to_city, date, failed_srcs, rg_fallback))
 
 if __name__ == "__main__":
     main()
