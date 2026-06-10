@@ -11,6 +11,8 @@ def _token():
 
 PNAME = {"rg":"RollingGo","tuniu":"途牛","tongcheng":"同程","meituan":"美团","fliggy":"飞猪","ctrip":"携程"}
 PORDER = ["rg","fliggy","tuniu","tongcheng","meituan","ctrip"]
+# 佣金优先级：RG(5%) > 飞猪(推广者计划) > 其他
+COMMISSION_PRIORITY = {"rg": 0, "fliggy": 1, "tuniu": 2, "tongcheng": 3, "meituan": 4, "ctrip": 5}
 STAR_MAP = {"五星级":["五星级","豪华型","5星"],"高档型":["高档型","四星级","4星"],"舒适型":["舒适型","三星级","3星"],"经济型":["经济型","二星级","1星","2星"]}
 
 BRANDS = ["华尔道夫","威斯汀","丽思卡尔顿","瑞吉","半岛","四季","文华东方","宝格丽","安缦","悦榕庄","费尔蒙","柏悦","康莱德","洲际","皇冠假日","JW万豪","W酒店","艾美","喜来登","万丽","万怡","君悦","索菲特","铂尔曼","凯宾斯基","朗廷","瑰丽","卓美亚","尼依格罗","英迪格","美爵","假日","全季","亚朵","维也纳","桔子水晶","丽枫","喆啡","美居","宜必思","康铂","诺富特","逸扉","花间堂","如家商旅","如家","汉庭","锦江之星","7天","海友","莫泰","格林豪泰","速8","锦江","金陵","开元","万达嘉华","希尔顿","万豪","凯悦","雅高"]
@@ -404,26 +406,30 @@ def _format(matched, city, ci, co, kw, max_price=0, star_level="", sort_by="pric
         pc = h["platform_count"]
         tag = f"  {pc}家平台比价" if pc>=3 else f"  仅{pc}家平台有报价"
         lines.append(f"**{idx}. {h['name']}**{tag}")
-        sorted_p = sorted(h["platforms"].items(), key=lambda x: x[1]["price"] if x[1]["price"]>0 else 99999)
+        # 排序：价格升序，同价按佣金优先级（RG>飞猪>其他）
+        sorted_p = sorted(h["platforms"].items(),
+            key=lambda x: (x[1]["price"] if x[1]["price"] > 0 else 99999, COMMISSION_PRIORITY.get(x[0], 99)))
         parts = []
-        for s, ph in sorted_p:
+        lowest_url = ""
+        for i, (s, ph) in enumerate(sorted_p):
             p = ph["price"]
-            ps = f"¥{int(p)}起" if s=="meituan" and p>0 else (f"¥{int(p)}" if p>0 else "—")
-            parts.append(f"{PNAME[s]} {ps}")
-        lines.append("   "+" | ".join(parts))
-        if h["min_price"] > 0 and pc >= 2:
-            ms = PNAME.get(sorted_p[0][0], "") if sorted_p else ""
-            pl = f"   💰 最低价 ¥{int(h['min_price'])}（{ms}）"
-            lowest_url = sorted_p[0][1].get("url", "") if sorted_p else ""
-            if lowest_url: pl += f" [去预订→]({lowest_url})"
-            prices = [(s, ph["price"]) for s, ph in sorted_p if ph["price"] > 0]
-            if len(prices) >= 2:
-                lowest_s, lowest_p = prices[0]
-                second_p = prices[1][1]
-                if lowest_p < second_p * 0.4:
-                    pl += f" ⚠️{PNAME.get(lowest_s,'')}价格异常偏低，可能非标准间"
-                elif _disparity(h): pl += " ⚠️价差较大，建议核实"
-            lines.append(pl)
+            ps = f"¥{int(p)}起" if s == "meituan" and p > 0 else (f"¥{int(p)}" if p > 0 else "—")
+            label = f"{PNAME[s]} {ps}"
+            if i == 0:
+                label = f"💰 {label}最低价"
+                url = ph.get("url", "")
+                if url: lowest_url = f" [去预订→]({url})"
+            parts.append(label)
+        lines.append("   " + " | ".join(parts) + lowest_url)
+        # 价差异常提醒
+        prices = [(s, ph["price"]) for s, ph in sorted_p if ph["price"] > 0]
+        if len(prices) >= 2:
+            lowest_s, lowest_p = prices[0]
+            second_p = prices[1][1]
+            if lowest_p < second_p * 0.4:
+                lines.append(f"   ⚠️ {PNAME.get(lowest_s, '')}价格异常偏低，可能非标准间")
+            elif _disparity(h):
+                lines.append("   ⚠️ 价差较大，建议核实")
         lines.append("")
     if single:
         lines.append("---"); lines.append("📌 更多酒店（仅单平台报价）"); lines.append("")
@@ -444,13 +450,15 @@ def _format(matched, city, ci, co, kw, max_price=0, star_level="", sort_by="pric
     if not has_date: tips.append("💡 如需其他日期，告诉入住和离店时间即可重搜")
     total = len(matched)
     lm = LANDMARKS.get(city,["市中心","火车站"])
-    refine_hint = f"💡 补充区域或地标（如{'、'.join(lm[:3])}），可以更精准推荐"
+    refine_hint = "💡 缩小范围：加区域或地标（如" + "、".join(lm[:3]) + "）、预算（如¥500以内）、星级（如五星级）、品牌（如万豪）"
     if total > 10:
-        tips.append(refine_hint + f"；也可指定预算（如\"500以内\"）、星级偏好（如\"五星级\"）等条件")
+        tips.append(refine_hint)
     elif not (kw and len(kw)>=2):
         tips.append(refine_hint)
-    mp = len([h for h in matched if h["platform_count"]>=2])
-    if mp < 3 and kw: tips.append("💡 多平台比价结果较少，换个关键词或扩大区域可能有更多发现")
+    mp_count = len([h for h in matched if h["platform_count"] >= 2])
+    if mp_count >= 3:
+        tips.append(f"💡 共{mp_count}家酒店有多平台比价，标💰的为最低价")
+    if mp_count < 3 and kw: tips.append("💡 多平台比价结果较少，换个关键词或扩大区域可能有更多发现")
     if tips: lines.append(""); lines.extend(tips)
     return "\n".join(lines)
 
