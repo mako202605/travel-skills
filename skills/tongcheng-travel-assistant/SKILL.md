@@ -1,6 +1,6 @@
 ---
 name: tongcheng-travel-assistant
-description: 零配置即装即用｜酒店机票门票火车票全覆盖｜含预订链接和实时价格｜同程出行一键搞定
+description: 零配置即装即用，覆盖酒店、机票、门票、火车票，含预订链接和实时价格，同程出行一键搞定。
 tags: [同程旅行, 酒店查询, 机票查询, 火车票查询, 景点门票, 汽车票, 度假线路, 旅行助手, tongcheng, travel]
 tools:
   - name: tongcheng_hotel_search

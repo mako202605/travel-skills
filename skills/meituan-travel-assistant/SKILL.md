@@ -1,6 +1,6 @@
 ---
 name: meituan-travel-assistant
-description: 零配置即装即用｜景点门票酒店机票一键查｜含预订链接和实时价格｜本地生活特价直达
+description: 零配置即装即用，支持景点门票、酒店、机票一键查询，含预订链接和实时价格，直达本地生活特价。
 tags: [美团旅行, 酒店查询, 机票查询, 火车票查询, 景点门票, 行程规划, 旅行助手, 出行, meituan, travel]
 tools:
   - name: tool_meituan_travel_query

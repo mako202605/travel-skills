@@ -1,6 +1,6 @@
 ---
 name: domestic-flight
-description: 零配置即装即用｜国内航班实时查询｜含直飞中转筛选｜价格时刻航司一查即得｜飞猪数据直连
+description: 零配置即装即用，支持国内航班实时查询，可筛选直飞和中转航班，价格、时刻、航司信息一查即得，基于飞猪数据直连。
 tags: [航班查询, 机票, 国内航班, 飞猪旅行, 飞猪机票, flight, domestic]
 tools:
   - name: search_flight
