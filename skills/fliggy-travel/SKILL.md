@@ -1,5 +1,6 @@
 ---
 name: fliggy-travel
+display_name: 飞猪旅行
 description: 零配置即装即用，提供9项工具涵盖酒店、机票、门票、火车票，含预订链接和退改政策，基于飞猪官方数据直连。
 tags: [飞猪旅行, 飞猪酒店, 飞猪机票, 飞猪火车票, 飞猪门票, 万豪酒店, 行程规划, 旅行助手, fliggy, travel, booking]
 tools:

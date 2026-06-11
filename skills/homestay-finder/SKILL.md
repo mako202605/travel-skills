@@ -1,5 +1,6 @@
 ---
 name: homestay-finder
+display_name: 特色民宿搜索
 description: 零配置即装即用，提供特色民宿搜索和AI智能推荐，基于飞猪数据直连。
 tags: [民宿搜索, 特色民宿, 民宿推荐, 客栈, 飞猪旅行, homestay, B&B]
 tools:

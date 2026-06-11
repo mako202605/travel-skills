@@ -1,5 +1,6 @@
 ---
 name: china-flight-price-compare
+display_name: 机票比价
 description: 零配置即装即用，支持多旅游平台实时比价一次出结果，含预订链接和航班对比，覆盖经济舱至头等舱。
 tags: [机票比价, 机票预订, 机票搜索, 机票查询, 订机票, 机票对比, 特价机票, 途牛机票, 航班查询, 打折机票, flight, airfare, travel]
 tools:

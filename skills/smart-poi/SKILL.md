@@ -1,5 +1,6 @@
 ---
 name: smart-poi
+display_name: 智能景点推荐
 description: 零配置即装即用，提供6项工具涵盖景点推荐、门票搜索、周边发现、天气和交通查询，基于飞猪与高德数据直连。
 tags: [景点推荐, 门票搜索, 周边景点, 天气查询, 交通出行, 飞猪旅行, 高德地图, POI, travel, attraction]
 tools:

@@ -1,5 +1,6 @@
 ---
 name: gaode-map-pro
+display_name: 高德地图全能版
 description: 零配置即装即用，提供17项地图能力，支持路线规划和周边搜索，覆盖驾车、公交、步行和骑行。
 tags: [高德地图, 地图查询, 路线规划, 导航, 周边搜索, POI搜索, 天气查询, 地理编码, 逆地理编码, IP定位, gaode, map, amap]
 tools:

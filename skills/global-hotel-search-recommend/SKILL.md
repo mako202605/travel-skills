@@ -1,5 +1,6 @@
 ---
 name: global-hotel-search-recommend
+display_name: 全球酒店搜索与推荐
 description: 零配置即装即用，一次调用完成酒店搜索与推荐，含预订链接和退改政策，自动识别场景智能推荐。
 tags: [酒店推荐, 酒店搜索, 酒店预订, 酒店查询, 订酒店, 亲子酒店, 商务酒店, 度假酒店, 便宜酒店, hotel, travel, booking]
 tools:

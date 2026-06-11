@@ -1,5 +1,6 @@
 ---
 name: tuniu-travel-assistant
+display_name: 途牛旅行助手
 description: 零配置即装即用，提供15项工具覆盖查询和预订，支持预订下单和订单管理，酒店、机票、火车票、门票一站搞定。
 tags: [途牛旅行, 酒店查询, 机票查询, 火车票查询, 景点门票, 旅行助手, 出行, 途牛, tuniu, travel]
 tools:

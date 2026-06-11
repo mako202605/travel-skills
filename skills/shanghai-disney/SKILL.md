@@ -1,5 +1,6 @@
 ---
 name: shanghai-disney
+display_name: 上海迪士尼游园助手
 version: 1.0.0
 license: MIT-0
 ---

@@ -1,5 +1,6 @@
 ---
 name: smart-travel
+display_name: 旅行智能助手
 description: 零配置即装即用，提供12项工具涵盖行程规划、火车票、机票、酒店、景点、美食、交通、打车和天气查询，基于飞猪与高德数据直连。
 tags: [飞猪旅行, 行程规划, 火车票, 机票, 酒店, 景点, 万豪, 美食, 交通, 天气, 打车, travel, planning]
 tools:

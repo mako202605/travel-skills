@@ -1,5 +1,6 @@
 ---
 name: gaode-taxi
+display_name: 高德打车
 description: 零配置即装即用，提供23项地图能力支持一键叫车，含路线规划和周边搜索，覆盖驾车、公交、步行、骑行和打车。
 tags: [高德打车, 打车, 叫车, 出租车, 网约车, 路线规划, 导航, 周边搜索, gaode, taxi, ride]
 tools:

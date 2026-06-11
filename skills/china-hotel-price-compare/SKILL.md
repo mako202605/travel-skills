@@ -1,5 +1,6 @@
 ---
 name: china-hotel-price-compare
+display_name: 酒店比价
 description: 零配置即装即用｜先浏览选定再比价｜4源实时比价含预订链接｜评分距离早餐窗户等详细信息
 tags: [酒店比价, 酒店预订, 酒店搜索, 酒店查询, 订酒店, 酒店对比, 特价酒店, 途牛酒店, 住宿比价, hotel, travel]
 tools:
