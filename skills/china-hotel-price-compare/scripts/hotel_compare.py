@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""酒店比价 v2.0 - 两步式交互（途牛MCP原生搜索 + 4源精确比价）
+"""酒店比价 v3.0 - 适配hotel-proxy v3（代理端统一解析，返回纯JSON dict）
 第一步：途牛MCP原生搜索（自动2页合并约16家）→ 代码层评分过滤 → 展示酒店列表 + 智能换条件提示
-第二步：用户选定酒店 → 4源精确比价（飞猪+RG detail+途牛多策略+同程）→ 展示各平台价格
+第二步：用户选定酒店 → 多旅游平台精确比价（飞猪+RG detail+途牛多策略+同程）→ 展示各平台价格
 美团酒店为推荐式接口，不支持按酒店名精确搜索，比价环节不使用
 """
 import argparse, json, re, urllib.request, urllib.error, concurrent.futures
@@ -41,52 +41,16 @@ def _proxy(source, params, timeout=30):
     except Exception as e:
         return {"code": 500, "error": str(e)}
 
-def _mcp_result(result):
-    if "error" in result:
-        return {"error": str(result.get("error", ""))[:200]}
-    content = result.get("result", {}).get("content", [])
-    if content and isinstance(content, list) and len(content) > 0:
-        f = content[0]
-        if isinstance(f, dict) and f.get("type") == "text":
-            t = f.get("text", "")
-            if "Error executing tool" in t:
-                return {"error": t[:200]}
-            try:
-                return json.loads(t)
-            except:
-                return {"raw_text": t}
-    sc = result.get("result", {}).get("structuredContent")
-    if sc:
-        return sc
-    return {"error": "无法解析响应"}
-
-def _parse(resp):
+def _get_data(resp):
+    """v3代理：直接返回纯dict，无需MCP/SSE解析"""
     if resp.get("code") != 0:
         return {"error": resp.get("error", "代理请求失败")[:200]}
-    data = resp.get("data", "")
-    ct = resp.get("content_type", "")
-    err = resp.get("error")
-    if err:
-        return {"error": str(err)[:200]}
-    if not data:
+    if resp.get("error"):
+        return {"error": str(resp["error"])[:200]}
+    data = resp.get("data")
+    if data is None:
         return {"error": "数据为空"}
-    try:
-        if isinstance(data, dict):
-            return data
-        parsed = json.loads(data) if isinstance(data, str) else data
-        if "text/event-stream" in ct:
-            if isinstance(parsed, str):
-                for line in parsed.split("\n"):
-                    if line.startswith("data:"):
-                        return _mcp_result(json.loads(line[5:].strip()))
-            return _mcp_result(parsed)
-        if isinstance(parsed, dict):
-            if "result" in parsed or "error" in parsed:
-                return _mcp_result(parsed)
-            return parsed
-        return {"error": "解析失败"}
-    except:
-        return {"error": "JSON解析失败"}
+    return data
 
 def _clean(name):
     """清理酒店名：去英文括号内容，保留中文括号和·"""
@@ -98,7 +62,7 @@ def _clean(name):
             break
     return name.strip()
 
-# ===== 第一步：途牛MCP原生搜索（自动2页） =====
+# ===== 第一步：途牛浏览（自动2页） =====
 def _tuniu_browse(city, ci, co, kw, max_price, poi_name, min_score):
     """途牛MCP原生酒店搜索，自动查2页合并，代码层过滤评分"""
     params = {"city": city, "check_in": ci, "check_out": co}
@@ -108,11 +72,11 @@ def _tuniu_browse(city, ci, co, kw, max_price, poi_name, min_score):
 
     # 第1页
     resp1 = _proxy("tuniu", params)
-    data1 = _parse(resp1)
+    data1 = _get_data(resp1)
     if "error" in data1:
         return [], 0
     qid1 = data1.get("queryId", "")
-    hl1 = data1.get("hotels") or data1.get("hotelList") or (data1 if isinstance(data1, list) else [])
+    hl1 = data1.get("hotels") or data1.get("hotelList") or []
     if not isinstance(hl1, list):
         hl1 = []
 
@@ -123,7 +87,7 @@ def _tuniu_browse(city, ci, co, kw, max_price, poi_name, min_score):
         params2["pageNum"] = "2"
         params2["queryId"] = qid1
         resp2 = _proxy("tuniu", params2)
-        data2 = _parse(resp2)
+        data2 = _get_data(resp2)
         if "hotels" in data2 or "hotelList" in data2:
             hl2 = data2.get("hotels") or data2.get("hotelList") or []
             if not isinstance(hl2, list):
@@ -179,18 +143,27 @@ def _tuniu_browse(city, ci, co, kw, max_price, poi_name, min_score):
         })
     return hotels, total_before_filter
 
-# ===== 第二步：4源精确比价 =====
+# ===== 第二步：多旅游平台精确比价 =====
 def _call_fg(city, ci, co, kw):
     """飞猪：keyword精准过滤，搜酒店名最稳"""
     resp = _proxy("fliggy", {"city": city, "check_in": ci, "check_out": co, "keyword": kw or ""})
-    data = _parse(resp)
+    data = _get_data(resp)
     if "error" in data:
         return []
-    hl = data if isinstance(data, list) else data.get("hotels") or data.get("hotelList") or []
-    if not isinstance(hl, list):
+    # v3飞猪格式：{data: {itemList: [...]}, status, ...}
+    items = []
+    if isinstance(data, dict):
+        inner = data.get("data", {})
+        if isinstance(inner, dict):
+            items = inner.get("itemList", [])
+        elif isinstance(inner, list):
+            items = inner
+        if not items:
+            items = data.get("hotels") or data.get("hotelList") or data.get("itemList") or []
+    if not isinstance(items, list):
         return []
     hotels = []
-    for h in hl[:20]:
+    for h in items[:20]:
         name = _clean(h.get("name") or h.get("hotelName", ""))
         if not name:
             continue
@@ -213,7 +186,7 @@ def _call_fg(city, ci, co, kw):
 def _call_rg_detail(name, ci, co):
     """RG：hotel_detail按名查，比价首选"""
     resp = _proxy("rg_detail", {"name": name, "check_in": ci, "check_out": co})
-    data = _parse(resp)
+    data = _get_data(resp)
     if "error" in data or "roomRatePlans" not in data:
         return None
     plans = data.get("roomRatePlans", [])
@@ -225,109 +198,98 @@ def _call_rg_detail(name, ci, co):
                 prices.append(float(tp))
             except:
                 pass
+        rp = plan.get("roomPrice")
+        if rp:
+            try:
+                prices.append(float(rp))
+            except:
+                pass
     if not prices:
         return None
-    booking_url = data.get("bookingUrl", "")
-    hotel_id = data.get("hotelId", "")
-    if not booking_url and hotel_id:
-        booking_url = f"https://rollinggo.cn/pages/hotel/detail/index?id={hotel_id}"
-    return {"name": _clean(data.get("name", name)), "price": min(prices),
-            "url": booking_url, "source": "rg"}
+    min_p = min(prices)
+    url = data.get("bookingUrl", "")
+    return {"name": _clean(data.get("name", name)), "price": min_p, "source": "rg", "url": url}
 
-def _call_tn_compare(city, ci, co, target_name, target_brand):
-    """途牛比价：多策略（酒店名→品牌→地址路名）"""
+def _call_tn_compare(city, ci, co, hotel_name, query_id):
+    """途牛：3种策略比价"""
     strategies = []
-    strategies.append({"keyword": target_name})
-    if target_brand and len(target_brand) >= 2:
-        strategies.append({"keyword": target_brand})
-    # 地址路名
-    road = re.search(r'[\u4e00-\u9fff]{2,4}[路街道]', target_name)
-    if road:
-        strategies.append({"keyword": road.group()})
+    # 策略1：指定酒店名搜索
+    if hotel_name:
+        strategies.append({"city": city, "check_in": ci, "check_out": co, "keyword": hotel_name})
+    # 策略2：如果有queryId翻页
+    if query_id:
+        strategies.append({"city": city, "check_in": ci, "check_out": co, "queryId": query_id, "pageNum": "1"})
+    # 策略3：全城搜索
+    if hotel_name:
+        strategies.append({"city": city, "check_in": ci, "check_out": co})
 
-    for s in strategies:
-        resp = _proxy("tuniu", {"city": city, "check_in": ci, "check_out": co, **s})
-        data = _parse(resp)
+    for params in strategies:
+        resp = _proxy("tuniu", params)
+        data = _get_data(resp)
         if "error" in data:
             continue
-        hl = data.get("hotels") or data.get("hotelList") or (data if isinstance(data, list) else [])
+        hl = data.get("hotels") or data.get("hotelList") or []
         if not isinstance(hl, list):
             continue
-        for h in hl[:15]:
+        for h in hl[:30]:
             hname = _clean(h.get("hotelName") or h.get("name", ""))
-            if not hname:
+            if not hname or not _name_match(hotel_name, hname):
                 continue
-            # 名字相似度判断
-            if _name_match(target_name, hname):
-                try:
-                    p = float(re.sub(r"[^\d.]", "", str(h.get("lowestPrice") or h.get("price") or "0")))
-                except:
-                    p = 0
-                if p <= 0:
-                    continue
-                hotel_id = str(h.get("hotelId", ""))
-                url = h.get("detailUrl") or h.get("url", "")
-                if not url and hotel_id:
-                    url = f"https://hotel.tuniu.com/detail/{hotel_id}"
-                return {"name": hname, "price": p, "source": "tuniu", "url": url}
+            try:
+                p = float(re.sub(r"[^\d.]", "", str(h.get("lowestPrice") or h.get("price") or "0")))
+            except:
+                p = 0
+            if p <= 0:
+                continue
+            hotel_id = str(h.get("hotelId", ""))
+            url = h.get("detailUrl") or ""
+            if not url and hotel_id:
+                url = f"https://hotel.tuniu.com/detail/{hotel_id}"
+            return {"name": hname, "price": p, "source": "tuniu", "url": url}
     return None
 
 def _call_tc_compare(city, ci, co, target_name):
-    """同程比价：keyword搜酒店名"""
-    resp = _proxy("tongcheng", {"city": city, "check_in": ci, "check_out": co, "keyword": target_name})
-    data = _parse(resp)
-    raw = resp.get("data", "")
-    ct = resp.get("content_type", "")
-    if isinstance(raw, str) and raw:
-        try:
-            result = json.loads(raw)
-            if result.get("code") == "0":
-                text = result.get("data", {}).get("text", "")
-                links = result.get("data", {}).get("产品跳转链接", {})
-                pats = [
-                    re.compile(r'^([^，。\n]+?)\s+距[\u4e00-\u9fff]+直线\d+[米公里]*，\s*评分[\s：:]*(\d+\.?\d*)[，,]?\s*价格[\s：:]*(\d+[\d,.]*)\s*元', re.M),
-                    re.compile(r'^([^，。\n]+?)\s+.*?评分[\s：:]*(\d+\.?\d*).*?价格[\s：:]*(\d+[\d,.]*)\s*元', re.M),
-                    re.compile(r'^([^，。\n]+?)\s+.*?价格[\s：:]*(\d+[\d,.]*)\s*元', re.M),
-                ]
-                for para in text.split("\n\n"):
-                    para = para.strip()
-                    if not para or any(s in para for s in ["出行建议", "客服电话", "建议入住"]):
-                        continue
-                    for pat in pats:
-                        m = pat.match(para)
-                        if m:
-                            hname = _clean(m.group(1).strip())
-                            if _name_match(target_name, hname):
-                                try:
-                                    pv = float(m.group(m.lastindex).replace(",", ""))
-                                except:
-                                    pv = 0
-                                if pv > 0:
-                                    url = ""
-                                    for lk, ld in links.items():
-                                        if hname in lk or lk in hname:
-                                            url = (ld.get("手机链接") or ld.get("PC链接", "")) if isinstance(ld, dict) else ""
-                                            break
-                                    return {"name": hname, "price": pv, "source": "tongcheng", "url": url}
-            # JSON-RPC MCP格式
-            result_obj = json.loads(raw) if isinstance(raw, str) else raw
-            content = result_obj.get("result", {}).get("content", [])
-            if content:
-                text = content[0].get("text", "")
-                parsed = json.loads(text) if text else {}
-                if isinstance(parsed, list):
-                    for h in parsed:
-                        hname = h.get("name") or h.get("hotelName", "")
-                        if _name_match(target_name, _clean(hname)):
-                            p = h.get("price") or h.get("lowestPrice", 0)
-                            try:
-                                p = float(re.sub(r"[^\d.]", "", str(p)))
-                            except:
-                                p = 0
-                            if p > 0:
-                                return {"name": _clean(hname), "price": p, "source": "tongcheng", "url": h.get("url", "")}
-        except:
-            pass
+    """同程：v3返回{text, 产品跳转链接}，从文本中提取价格"""
+    resp = _proxy("tongcheng", {"city": city, "check_in": ci, "check_out": co})
+    data = _get_data(resp)
+    if "error" in data:
+        return None
+    # v3同程格式：{code: 0, msg: 'success', data: {text: '...', '产品跳转链接': {...}}}
+    inner = data.get("data", data)
+    if not isinstance(inner, dict):
+        return None
+    text = inner.get("text", "")
+    links = inner.get("产品跳转链接", {})
+    if not text:
+        return None
+
+    # 从文本解析酒店价格
+    pats = [
+        re.compile(r'^([^，。\n]+?)\s+.*?评分[\s：:]*(\d+\.?\d*).*?价格[\s：:]*(\d+[\d,.]*)\s*元', re.M),
+        re.compile(r'^([^，。\n]+?)\s+.*?价格[\s：:]*(\d+[\d,.]*)\s*元', re.M),
+    ]
+    for para in text.split("\n\n"):
+        para = para.strip()
+        if not para or any(s in para for s in ["出行建议", "客服电话", "建议入住"]):
+            continue
+        for pat in pats:
+            m = pat.match(para)
+            if m:
+                hname = _clean(m.group(1).strip())
+                if _name_match(target_name, hname):
+                    try:
+                        price_group = m.group(m.lastindex)
+                        pv = float(price_group.replace(",", ""))
+                    except:
+                        pv = 0
+                    if pv > 0:
+                        url = ""
+                        if isinstance(links, dict):
+                            for lk, ld in links.items():
+                                if hname in lk or lk in hname:
+                                    url = (ld.get("手机链接") or ld.get("PC链接", "")) if isinstance(ld, dict) else ""
+                                    break
+                        return {"name": hname, "price": pv, "source": "tongcheng", "url": url}
     return None
 
 def _name_match(target, candidate, threshold=0.4):
@@ -546,7 +508,7 @@ def main():
         print("❌ 日期格式不正确，请使用YYYY-MM-DD格式"); return
 
     if hotel_name:
-        # ========== 第二步：4源精确比价 ==========
+        # ========== 第二步：多旅游平台精确比价 ==========
         rg_result = _call_rg_detail(hotel_name, ci, co)
         tn_result = _call_tn_compare(city, ci, co, hotel_name, "")
         fg_result = None
@@ -558,7 +520,7 @@ def main():
         tc_result = _call_tc_compare(city, ci, co, hotel_name)
         print(_format_compare(hotel_name, rg_result, tn_result, fg_result, tc_result, city, ci, co))
     else:
-        # ========== 第一步：途牛MCP原生浏览（自动2页） ==========
+        # ========== 第一步：途牛浏览（自动2页） ==========
         hotels, total_before_filter = _tuniu_browse(city, ci, co, kw, mp, poi_name, ms)
         if not hotels:
             tips = _smart_tips([], city, kw, mp, poi_name, ms, total_before_filter)
