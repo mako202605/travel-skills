@@ -1,6 +1,6 @@
 ---
 name: global-flight-search
-description: 零配置即装即用｜全球航班一次搜出结果｜含座位余量和行李额度｜性价比标签智能推荐
+description: 零配置即装即用，支持全球航班一次搜出结果，含座位余量和行李额度查询，带性价比标签智能推荐。
 tags: [航班查询, 航班搜索, 机票查询, 机票搜索, 订机票, 国际航班, 国内航班, 航班比价, 便宜机票]
 tools:
   - name: search_flights
