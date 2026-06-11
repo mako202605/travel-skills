@@ -1,19 +1,11 @@
 ---
 name: group-tour-search
 display_name: 跟团游搜索与推荐
-description: 搜索跟团游、私家团、纯玩线路，支持场景推荐（海边、古镇、亲子、山水等），并提供到目的地的火车票和机票查询，基于同程旅行与飞猪数据直连。
+description: 搜索跟团游、私家团、纯玩线路，支持场景推荐（海边、古镇、亲子、山水等），并提供到目的地的火车票和机票查询，多旅游平台数据直连。
 tags: [跟团游, 旅游度假, 私家团, 纯玩, 小团, 火车票, 机票, travel, tour]
 tools:
   - name: search_tour
     description: 搜索跟团游线路，支持目的地搜索和场景推荐
-    primaryEnv: TONGCHENG_PROXY_URL
-    env:
-      - name: TONGCHENG_PROXY_URL
-        description: 同程代理URL（自动配置）
-        required: false
-      - name: PROXY_TOKEN
-        description: 代理认证Token（自动配置）
-        required: false
     parameters:
       - name: destination
         type: string
@@ -77,4 +69,4 @@ tools:
 ## 注意事项
 
 - 价格实时变动，以实际预订页面为准
-- 查询通过云端代理转发到同程旅行+飞猪旅行API，代理不存储用户数据
+- 数据来源为多旅游平台直连，不存储用户数据

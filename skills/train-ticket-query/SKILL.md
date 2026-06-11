@@ -1,19 +1,11 @@
 ---
 name: train-ticket-query
-display_name: 火车票查询
-description: 零配置即装即用，支持火车票查询含12306实时余票、去火车站交通方式查询和住宿推荐，基于飞猪与高德数据直连。
+display_name: 12306火车票查询与预订
+description: 零配置即装即用，支持火车票查询含12306实时余票、去火车站交通方式查询和住宿推荐，多旅游平台数据直连。
 tags: [火车票, 高铁, 动车, 12306余票, 火车票查询, 订火车票, 火车站交通, 住宿推荐, train, railway, ticket]
 tools:
   - name: search_train
     description: 查询火车票/高铁票的余票、价格和时刻表，含12306实时余票信息
-    primaryEnv: FLIGGY_PROXY_URL
-    env:
-      - name: FLIGGY_PROXY_URL
-        description: 飞猪代理URL（自动配置，无需手动设置）
-        required: false
-      - name: PROXY_TOKEN
-        description: 代理认证Token（自动配置，无需手动设置）
-        required: false
     parameters:
       - name: departure
         type: string
@@ -37,14 +29,6 @@ tools:
         required: false
   - name: query_transport
     description: 查询从出发地到火车站的交通方式，包括打车预估费用和公交地铁路线
-    primaryEnv: GAODE_PROXY_URL
-    env:
-      - name: GAODE_PROXY_URL
-        description: 高德代理URL（自动配置，无需手动设置）
-        required: false
-      - name: PROXY_TOKEN
-        description: 代理认证Token（自动配置，无需手动设置）
-        required: false
     parameters:
       - name: origin
         type: string
@@ -60,14 +44,6 @@ tools:
         required: true
   - name: recommend_hotel
     description: 用自然语言描述住宿需求，AI智能匹配高分酒店并返回推荐和预订链接
-    primaryEnv: FLIGGY_PROXY_URL
-    env:
-      - name: FLIGGY_PROXY_URL
-        description: 飞猪代理URL（自动配置，无需手动设置）
-        required: false
-      - name: PROXY_TOKEN
-        description: 代理认证Token（自动配置，无需手动设置）
-        required: false
     parameters:
       - name: query
         type: string
@@ -75,7 +51,7 @@ tools:
         required: true
 ---
 
-# 火车票查询 — 火车票查询含12306余票 + 去站交通 + 住宿推荐
+# 12306火车票查询与预订 — 火车票查询含12306余票 + 去站交通 + 住宿推荐
 
 > ⚡ **12306实时余票 · 灵活日期输入 · 去站交通 · 住宿推荐 · 零配置即装即用**
 
@@ -110,7 +86,7 @@ tools:
 
 - 不支持直接购买火车票（提供预订链接，用户点击跳转购买）
 - 不支持查询已购车票状态或办理退票
-- 12306余票依赖12306官网接口，偶发不可用时仅显示飞猪票价
+- 12306余票依赖12306官网接口，偶发不可用时仅显示票价参考
 
 ## 使用示例
 
@@ -122,10 +98,10 @@ tools:
 ## 注意事项
 
 - 12306余票信息来自12306官网，实时变动，以实际购票页面为准
-- 飞猪票价为参考价，实际价格以预订页面为准
-- 查询通过云端代理转发到飞猪和高德平台，代理不存储用户数据
+- 票价为参考价，实际价格以预订页面为准
 - 退票规则：开车前8天以上免手续费 | 48小时~8天扣5% | 24~48小时扣10% | 不足24小时扣20%
+- 数据来源为多旅游平台直连，不存储用户数据
 
 ## 数据流向
 
-用户输入 → 本技能 → 腾讯云SCF代理（密钥安全存储）→ 飞猪/高德/12306 → 代理返回数据 → 本技能解析 → 返回结果给用户
+用户输入 → 本技能 → 多旅游平台/12306 → 返回结果给用户
